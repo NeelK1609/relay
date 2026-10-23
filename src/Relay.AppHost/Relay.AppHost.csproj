@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Relay.Api\Relay.Api.csproj" />
+    <ProjectReference Include="..\Relay.Mcp\Relay.Mcp.csproj" />
   </ItemGroup>
 
 </Project>

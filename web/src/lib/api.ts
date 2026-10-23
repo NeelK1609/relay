@@ -87,6 +87,8 @@ export const workspaceApi = {
     (await request<{ enabled: boolean }>(`/api/workspace/cases/${caseId}/ai/status`)).enabled,
   draftReply: (caseId: string, staffId: string) =>
     request<DraftReply>(`/api/workspace/cases/${caseId}/ai/draft`, { method: "POST", body: json({ staffId }) }),
+  ask: (staffId: string, question: string) =>
+    request<{ answer: string; toolsUsed: string[] }>("/api/workspace/ask", { method: "POST", body: json({ staffId, question }) }),
   summarize: (caseId: string) =>
     request<CaseDetail>(`/api/workspace/cases/${caseId}/ai/summarize`, { method: "POST" }),
 };

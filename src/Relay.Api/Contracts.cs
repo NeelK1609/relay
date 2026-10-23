@@ -48,6 +48,8 @@ public sealed record CaseDetailDto(CaseSummaryDto Summary, CustomerDto Customer,
 
 public sealed record DraftRequest(Guid StaffId);
 
+public sealed record AskRequest(Guid StaffId, string Question);
+
 public sealed record ArticleDto(Guid Id, string Title, CaseCategory Category, string Body, DateTimeOffset UpdatedAt)
 {
     public static ArticleDto From(KnowledgeArticle a) => new(a.Id, a.Title, a.Category, a.Body, a.UpdatedAt);

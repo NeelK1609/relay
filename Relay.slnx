@@ -5,6 +5,7 @@
     <Project Path="src/Relay.AppHost/Relay.AppHost.csproj" />
     <Project Path="src/Relay.Crm.Sql/Relay.Crm.Sql.csproj" />
     <Project Path="src/Relay.Domain/Relay.Domain.csproj" />
+    <Project Path="src/Relay.Mcp/Relay.Mcp.csproj" />
     <Project Path="src/Relay.ServiceDefaults/Relay.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/tests/">

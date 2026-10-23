@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { SentimentBadge } from "@/components/ai-panel";
+import { AskRelay } from "@/components/ask-relay";
+import { askRelay } from "./actions";
 import { CategoryBadge, PriorityBadge, StatusBadge } from "@/components/badges";
 import { SlaIndicator } from "@/components/sla";
 import { workspaceApi, type CaseFilters } from "@/lib/api";
@@ -42,6 +44,8 @@ export default async function Queue({ searchParams }: PageProps<"/workspace">) {
           </div>
         ))}
       </dl>
+
+      <AskRelay ask={askRelay} />
 
       <form className="mt-6 flex flex-wrap items-center gap-2">
         <input

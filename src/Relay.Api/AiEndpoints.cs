@@ -9,6 +9,14 @@ public static class AiEndpoints
 {
     public static void MapAiEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapPost("/api/workspace/ask", async (AskRequest req, IServiceProvider sp, ICrmStore crm, CancellationToken ct) =>
+        {
+            if (sp.GetService<OpsCopilot>() is not { } copilot) return AiDisabled();
+            if (string.IsNullOrWhiteSpace(req.Question) || req.Question.Length > 1000) return Results.BadRequest("Ask a question of up to 1,000 characters.");
+            if (await crm.GetStaffAsync(req.StaffId, ct) is not { } staff) return Results.BadRequest("Unknown staff member.");
+            return Results.Ok(await copilot.AskAsync(staff, req.Question.Trim(), ct));
+        }).WithTags("AI");
+
         var ai = app.MapGroup("/api/workspace/cases/{caseId:guid}/ai").WithTags("AI");
 
         ai.MapGet("/status", (IOptions<FoundryOptions> options) => new { enabled = options.Value.IsConfigured });

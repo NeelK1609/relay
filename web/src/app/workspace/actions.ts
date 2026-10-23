@@ -57,6 +57,18 @@ export async function draftReply(caseId: string): Promise<{ reply?: string; sour
   }
 }
 
+export async function askRelay(question: string): Promise<{ answer?: string; toolsUsed?: string[]; error?: string }> {
+  const staffId = await getStaffId();
+  if (!staffId) return { error: "Choose who you're signed in as first (bottom of the sidebar)." };
+  try {
+    const result = await workspaceApi.ask(staffId, question);
+    revalidatePath("/workspace", "layout");
+    return result;
+  } catch (e) {
+    return { error: e instanceof ApiError ? e.message : "Relay couldn't answer that. Try again." };
+  }
+}
+
 export async function refreshSummary(caseId: string) {
   await run(caseId, () => workspaceApi.summarize(caseId));
 }

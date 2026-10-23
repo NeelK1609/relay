@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "relay-crm": {
+      "type": "http",
+      "url": "http://localhost:5134/mcp"
+    }
+  }
+}
