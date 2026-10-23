@@ -13,6 +13,7 @@ public sealed class RelayDbContext(DbContextOptions<RelayDbContext> options) : D
     public DbSet<CaseMessage> CaseMessages => Set<CaseMessage>();
     public DbSet<KnowledgeArticle> KnowledgeArticles => Set<KnowledgeArticle>();
     public DbSet<DemoState> DemoState => Set<DemoState>();
+    public DbSet<ChatSession> Chats => Set<ChatSession>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -71,6 +72,16 @@ public sealed class RelayDbContext(DbContextOptions<RelayDbContext> options) : D
         {
             e.Property(x => x.Id).ValueGeneratedNever();
             e.Property(x => x.Body).HasMaxLength(8000);
+        });
+
+        b.Entity<ChatSession>(e =>
+        {
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property<byte[]>("Version").IsRowVersion();
+            e.HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId);
+            e.HasOne(x => x.Staff).WithMany().HasForeignKey(x => x.StaffId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne<SupportCase>().WithMany().HasForeignKey(x => x.CaseId).OnDelete(DeleteBehavior.NoAction);
+            e.HasIndex(x => x.CaseId);
         });
     }
 }

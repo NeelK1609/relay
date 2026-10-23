@@ -58,3 +58,31 @@ export async function replyToRequest(caseId: string, formData: FormData) {
   }
   revalidatePath(`/requests/${caseId}`);
 }
+
+type ChatResult<T> = { data?: T; error?: string };
+
+async function chatCall<T>(fn: (customerId: string) => Promise<T>): Promise<ChatResult<T>> {
+  const customerId = await getCustomerId();
+  if (!customerId) return { error: "Sign in to chat with us." };
+  try {
+    return { data: await fn(customerId) };
+  } catch (e) {
+    return { error: e instanceof ApiError ? e.message : "Chat is unavailable right now. Please try again." };
+  }
+}
+
+export async function startChat() {
+  return chatCall((customerId) => portalApi.startChat(customerId));
+}
+
+export async function resumeChat(chatId: string) {
+  return chatCall(async (customerId) => (await portalApi.connectChat(customerId, chatId)) ?? undefined);
+}
+
+export async function sendChat(chatId: string, text: string) {
+  return chatCall((customerId) => portalApi.sendChat(customerId, chatId, text));
+}
+
+export async function endChat(chatId: string) {
+  return chatCall((customerId) => portalApi.endChat(customerId, chatId));
+}

@@ -20,7 +20,7 @@ public static class PortalEndpoints
             return cases.OrderByDescending(c => c.CreatedAt).Select(c => CaseSummaryDto.From(c, now));
         });
 
-        portal.MapPost("/cases", async (Guid customerId, OpenCaseRequest req, ICrmStore crm, ITriageQueue triage, TimeProvider clock, CancellationToken ct) =>
+        portal.MapPost("/cases", async (Guid customerId, OpenCaseRequest req, ICrmStore crm, ITriageQueue triage, ICaseNotifier notifier, TimeProvider clock, CancellationToken ct) =>
         {
             if (await crm.GetCustomerAsync(customerId, ct) is not { } customer) return Results.NotFound();
 
@@ -30,6 +30,7 @@ public static class PortalEndpoints
             var supportCase = SupportCase.Open(customer, req.Title, req.Description, req.Category, priority, req.Channel, now);
             await crm.AddCaseAsync(supportCase, ct);
             await triage.EnqueueAsync(supportCase.Id, ct);
+            await notifier.NotifyAsync(new CaseNotification(supportCase.Id, NotificationKind.CaseOpened), ct);
 
             var saved = await crm.GetCaseAsync(supportCase.Id, ct);
             return Results.Created($"/api/portal/customers/{customerId}/cases/{supportCase.Id}",

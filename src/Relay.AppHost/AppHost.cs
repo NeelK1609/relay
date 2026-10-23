@@ -59,6 +59,16 @@ if (publishing)
     var mcpAuth = builder.AddBicepTemplate("mcp-auth", "../../infra/mcp-auth.bicep")
         .WithParameter("callerPrincipalId", apiIdentity.GetOutput("principalId"));
 
+    var communication = builder.AddBicepTemplate("communication", "../../infra/communication.bicep")
+        .WithParameter("principalId", apiIdentity.GetOutput("principalId"));
+
+    // Placeholder matches no address, so the public demo sends no real email until you set one.
+    var emailAllowlist = builder.AddParameter("emailAllowlist", "none", publishValueAsDefault: true);
+
+    api.WithEnvironment("Communication__Endpoint", communication.GetOutput("endpoint"))
+        .WithEnvironment("Communication__SenderAddress", communication.GetOutput("senderAddress"))
+        .WithEnvironment("Communication__AllowedRecipients", emailAllowlist);
+
     api.WithAzureUserAssignedIdentity(apiIdentity)
         .WithReference(chat)
         .WithReference(embedding)
@@ -78,16 +88,24 @@ else
         service.WithEnvironment("Foundry__Endpoint", foundryEndpoint)
             .WithEnvironment("Foundry__TraceSensitiveData", "true");
     }
+
+    // Outputs of infra/communication.bicep deployed to the dev resource group (see README).
+    api.WithEnvironment("Communication__Endpoint", builder.AddParameter("communication-endpoint"))
+        .WithEnvironment("Communication__SenderAddress", builder.AddParameter("email-sender"))
+        .WithEnvironment("Communication__AllowedRecipients", builder.AddParameter("email-allowlist"));
 }
 
 // ASPIREJAVASCRIPT001: AddNextJsApp is preview; it builds the standalone production container.
 #pragma warning disable ASPIREJAVASCRIPT001
-builder.AddNextJsApp("web", "../../web")
+var web = builder.AddNextJsApp("web", "../../web")
     .WithEnvironment("RELAY_API_URL", api.GetEndpoint("http"))
     .WithExternalHttpEndpoints()
     .WaitFor(api)
     .PublishAsAzureContainerApp((_, app) => Scale(app, max: 3));
 #pragma warning restore ASPIREJAVASCRIPT001
+
+// Links in emails point at the customer portal.
+api.WithEnvironment("Communication__PortalBaseUrl", web.GetEndpoint("http"));
 
 builder.Build().Run();
 

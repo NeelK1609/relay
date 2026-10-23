@@ -35,4 +35,14 @@ public interface ICrmStore
 
     Task<IReadOnlyList<KnowledgeArticle>> SearchKnowledgeAsync(string? text, CaseCategory? category, CancellationToken ct);
     Task<KnowledgeArticle?> GetArticleAsync(Guid id, CancellationToken ct);
+
+    Task AddChatAsync(ChatSession chat, CancellationToken ct);
+    Task<ChatSession?> GetChatAsync(Guid id, CancellationToken ct);
+    Task<ChatSession?> GetChatForCaseAsync(Guid caseId, CancellationToken ct);
+
+    /// <summary>Saves changes to any loaded cases and chats together.</summary>
+    Task SaveChangesAsync(CancellationToken ct);
+
+    /// <summary>Forgets loaded entities so the next read sees the latest data (used to retry after a conflict).</summary>
+    void DiscardChanges();
 }

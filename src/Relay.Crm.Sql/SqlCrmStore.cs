@@ -63,17 +63,7 @@ public sealed class SqlCrmStore(RelayDbContext db) : ICrmStore
         await db.SaveChangesAsync(ct);
     }
 
-    public async Task SaveCaseAsync(SupportCase supportCase, CancellationToken ct)
-    {
-        try
-        {
-            await db.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateConcurrencyException ex)
-        {
-            throw new ConcurrencyConflictException(ex);
-        }
-    }
+    public Task SaveCaseAsync(SupportCase supportCase, CancellationToken ct) => SaveChangesAsync(ct);
 
     public async Task<CaseStats> GetStatsAsync(DateTimeOffset now, CancellationToken ct)
     {
@@ -109,4 +99,33 @@ public sealed class SqlCrmStore(RelayDbContext db) : ICrmStore
 
     public Task<KnowledgeArticle?> GetArticleAsync(Guid id, CancellationToken ct) =>
         db.KnowledgeArticles.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id, ct);
+
+    public async Task AddChatAsync(ChatSession chat, CancellationToken ct)
+    {
+        db.Chats.Add(chat);
+        await db.SaveChangesAsync(ct);
+    }
+
+    public Task<ChatSession?> GetChatAsync(Guid id, CancellationToken ct) =>
+        db.Chats.Include(c => c.Customer).ThenInclude(c => c.Account).Include(c => c.Staff).FirstOrDefaultAsync(c => c.Id == id, ct);
+
+    public Task<ChatSession?> GetChatForCaseAsync(Guid caseId, CancellationToken ct) =>
+        db.Chats.Include(c => c.Customer).ThenInclude(c => c.Account).Include(c => c.Staff)
+            .Where(c => c.CaseId == caseId)
+            .OrderByDescending(c => c.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+
+    public void DiscardChanges() => db.ChangeTracker.Clear();
+
+    public async Task SaveChangesAsync(CancellationToken ct)
+    {
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConcurrencyConflictException(ex);
+        }
+    }
 }

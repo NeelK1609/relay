@@ -8,7 +8,8 @@ import { getStaffId } from "@/lib/session";
 import { CASE_CATEGORIES, CASE_PRIORITIES, CASE_STATUSES, CATEGORY_LABELS, STATUS_LABELS } from "@/lib/types";
 import { AiPanel } from "@/components/ai-panel";
 import { ReplyComposer } from "@/components/reply-composer";
-import { draftReply, postMessage, refreshSummary, updateCase } from "../../actions";
+import { LiveChatPanel } from "@/components/live-chat-panel";
+import { draftReply, endStaffChat, joinChat, postMessage, refreshSummary, sendStaffChat, updateCase } from "../../actions";
 
 const authorStyles = {
   Customer: "border-slate-200 bg-white",
@@ -20,11 +21,12 @@ const authorStyles = {
 export default async function CaseWorkspace({ params, searchParams }: PageProps<"/workspace/cases/[id]">) {
   const { id } = await params;
   const { error } = await searchParams;
-  const [detail, staff, staffId, aiEnabled] = await Promise.all([
+  const [detail, staff, staffId, aiEnabled, chat] = await Promise.all([
     workspaceApi.getCase(id),
     workspaceApi.staff(),
     getStaffId(),
     workspaceApi.aiEnabled(id),
+    workspaceApi.caseChat(id).catch(() => null),
   ]);
   if (!detail) notFound();
   const { summary: c, customer, messages } = detail;
@@ -73,6 +75,15 @@ export default async function CaseWorkspace({ params, searchParams }: PageProps<
               </li>
             ))}
           </ol>
+
+          {chat && (
+            <LiveChatPanel
+              state={chat}
+              join={joinChat.bind(null, c.id)}
+              send={sendStaffChat.bind(null, c.id)}
+              end={endStaffChat.bind(null, c.id)}
+            />
+          )}
 
           {c.status !== "Closed" &&
             (staffId ? (

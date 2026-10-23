@@ -26,6 +26,12 @@ public sealed record DraftReply(string Reply, string[] Sources);
 
 public sealed record ConversationSummary(string Summary, Sentiment Sentiment);
 
+public sealed record ChatTurn(
+    [property: Description("Your next chat message to the customer. Short and conversational.")] string Reply,
+    [property: Description("True to hand the chat to a person and open a case.")] bool HandOff,
+    [property: Description("When handing off: a short case title in the customer's terms. Otherwise empty.")] string CaseTitle,
+    [property: Description("When handing off: the best-fitting category.")] CaseCategory Category);
+
 /// <summary>The four Relay agents. Each one is stateless and safe to share.</summary>
 public sealed class RelayAgents
 {
@@ -85,6 +91,22 @@ public sealed class RelayAgents
             and end with the staff member's first name.
             """);
 
+        Chat = Create(chatClient, "Relay Assistant", [searchKnowledge], $"""
+            You are Highland Energy's live chat assistant. {Company}
+            {UntrustedInput}
+
+            Answer questions using search_help_centre and only facts from the articles it returns.
+            Keep each reply under 80 words, friendly and plain. Ask at most one clarifying question at a time.
+
+            Set handOff to true, and say a member of the team will take over, when:
+            - the customer asks for a person, or is frustrated;
+            - the request needs account-specific action (bills, payments, moves, meter readings, appointments);
+            - the customer reports an outage they are experiencing now, or any safety risk (for danger, first tell them
+              to stay away and call 911 and 1-888-555-0199). General questions about outages are answered, not handed off;
+            - you could not answer after two tries.
+            Never invent account details, case numbers or timelines; a case reference is added for you.
+            """);
+
         Summarize = Create(chatClient, "Relay Summarizer", [], $"""
             You summarise support conversations for Highland Energy staff. {Company}
             {UntrustedInput}
@@ -98,6 +120,7 @@ public sealed class RelayAgents
     public AIAgent Answer { get; }
     public AIAgent Draft { get; }
     public AIAgent Summarize { get; }
+    public AIAgent Chat { get; }
 
     private static AIAgent Create(IChatClient chatClient, string name, IList<AITool> tools, string instructions) =>
         chatClient.AsAIAgent(new ChatClientAgentOptions

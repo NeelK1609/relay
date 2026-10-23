@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { portalApi } from "@/lib/api";
 import { getCustomerId } from "@/lib/session";
-import { signOut } from "./actions";
+import { ChatWidget } from "@/components/chat-widget";
+import { endChat, resumeChat, sendChat, signOut, startChat } from "./actions";
 
 export default async function PortalLayout({ children }: LayoutProps<"/">) {
   const customerId = await getCustomerId();
@@ -43,6 +44,7 @@ export default async function PortalLayout({ children }: LayoutProps<"/">) {
         </div>
       </header>
       <main className="flex-1">{children}</main>
+      {customer && <ChatWidget start={startChat} resume={resumeChat} send={sendChat} end={endChat} />}
       <footer className="border-t border-slate-200 bg-slate-50">
         <div className="mx-auto flex max-w-5xl flex-wrap justify-between gap-2 px-4 py-6 text-sm text-slate-500">
           <span>Highland Energy is a fictional utility used to demo Relay.</span>

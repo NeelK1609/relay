@@ -7,7 +7,7 @@ namespace Relay.Agents;
 
 /// <summary>Runs the Relay agents against cases and records the results in the CRM.</summary>
 public sealed class CaseAssistant(
-    RelayAgents agents, ICrmStore crm, TimeProvider clock, IOptions<FoundryOptions> options, ILogger<CaseAssistant> log)
+    RelayAgents agents, ICrmStore crm, ICaseNotifier notifier, TimeProvider clock, IOptions<FoundryOptions> options, ILogger<CaseAssistant> log)
 {
     private const string AssistantSignature =
         "\n\n— Relay Assistant (AI), Highland Energy. A member of our team will follow up if you still need help.";
@@ -20,6 +20,7 @@ public sealed class CaseAssistant(
         c.ApplyTriage(triage.Summary, triage.Sentiment, triage.Category, triage.Priority,
             Math.Clamp(triage.Confidence, 0, 1), triage.SafetyRisk, triage.Reason, options.Value.AutoApplyConfidence, clock.GetUtcNow());
 
+        var answered = false;
         if (options.Value.AutoAnswer && triage.SelfServiceCandidate && !triage.SafetyRisk && c.Status == CaseStatus.New)
         {
             var answer = (await agents.Answer.RunAsync<KnowledgeAnswer>(Describe(c), serializerOptions: RelayAgents.Json, cancellationToken: ct)).Result;
@@ -27,10 +28,12 @@ public sealed class CaseAssistant(
             {
                 var sources = answer.Sources.Length > 0 ? $"\n\nHelpful articles: {string.Join("; ", answer.Sources)}" : "";
                 c.AddMessage(AuthorType.AiAgent, "Relay Assistant", answer.Reply.Trim() + sources + AssistantSignature, false, clock.GetUtcNow());
+                answered = true;
             }
         }
 
         await crm.SaveCaseAsync(c, ct);
+        if (answered) await notifier.NotifyAsync(new CaseNotification(c.Id, NotificationKind.NewReply), ct);
         log.LogInformation("Triaged {Case}: {Category}/{Priority} at {Confidence:P0}, applied={Applied}",
             c.Reference, triage.Category, triage.Priority, triage.Confidence, c.Insights!.Applied);
     }

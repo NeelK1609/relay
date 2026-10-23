@@ -162,6 +162,7 @@ public static class DemoData
         await strategy.ExecuteAsync(async () =>
         {
             await using var tx = await db.Database.BeginTransactionAsync(ct);
+            await db.Chats.ExecuteDeleteAsync(ct);
             await db.CaseMessages.ExecuteDeleteAsync(ct);
             await db.Cases.ExecuteDeleteAsync(ct);
             await db.Customers.ExecuteDeleteAsync(ct);

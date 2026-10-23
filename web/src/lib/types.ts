@@ -101,3 +101,26 @@ export const STATUS_LABELS: Record<CaseStatus, string> = {
   Resolved: "Resolved",
   Closed: "Closed",
 };
+
+export type ChatStatus = "WithAssistant" | "WaitingForAgent" | "WithAgent" | "Ended";
+
+export type ChatConnection = {
+  sessionId: string;
+  endpoint: string;
+  threadId: string;
+  userId: string;
+  displayName: string;
+  token: string;
+  expiresOn: string;
+  status: ChatStatus;
+  caseId: string | null;
+  caseReference: string | null;
+};
+
+export type ChatState = {
+  sessionId: string;
+  status: ChatStatus;
+  caseId: string | null;
+  caseReference: string | null;
+  staffName: string | null;
+};

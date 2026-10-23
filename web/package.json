@@ -9,11 +9,15 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@azure/communication-chat": "^1.6.0",
+    "@azure/communication-common": "^2.5.0",
     "next": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@emnapi/core": "^1.11.3",
+    "@emnapi/runtime": "^1.11.3",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -22,5 +26,8 @@
     "eslint-config-next": "16.4.2",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

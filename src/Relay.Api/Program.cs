@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Relay.Agents;
 using Relay.Api;
+using Relay.Channels;
 using Relay.Crm.Sql;
 using Relay.Domain;
 
@@ -14,6 +15,7 @@ builder.AddSqlServerDbContext<RelayDbContext>("relaydb");
 builder.Services.AddScoped<ICrmStore, SqlCrmStore>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddRelayAgents(builder.Configuration);
+builder.Services.AddRelayChannels(builder.Configuration);
 builder.Services.AddDemoSafeguards(builder.Configuration);
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
@@ -35,6 +37,7 @@ app.MapPortalEndpoints();
 app.MapWorkspaceEndpoints();
 app.MapKnowledgeEndpoints();
 app.MapAiEndpoints();
+app.MapChatEndpoints();
 
 using (var scope = app.Services.CreateScope())
 {

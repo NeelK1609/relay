@@ -49,12 +49,13 @@ public static class DemoSafeguards
             })
             : RateLimitPartition.GetNoLimiter("free"));
 
-    /// <summary>Requests that call a model: Ask Relay, AI actions, and new portal cases (which trigger triage).</summary>
+    /// <summary>Requests that call a model: Ask Relay, AI actions, new portal cases (triage), and customer chat turns.</summary>
     private static bool CostsAi(HttpRequest r) =>
         HttpMethods.IsPost(r.Method) && r.Path.Value is { } path &&
         (path.StartsWith("/api/workspace/ask", StringComparison.OrdinalIgnoreCase) ||
          (path.StartsWith("/api/workspace/cases/", StringComparison.OrdinalIgnoreCase) && path.Contains("/ai/", StringComparison.OrdinalIgnoreCase)) ||
-         (path.StartsWith("/api/portal/", StringComparison.OrdinalIgnoreCase) && path.EndsWith("/cases", StringComparison.OrdinalIgnoreCase)));
+         (path.StartsWith("/api/portal/", StringComparison.OrdinalIgnoreCase) &&
+          (path.EndsWith("/cases", StringComparison.OrdinalIgnoreCase) || path.Contains("/chats", StringComparison.OrdinalIgnoreCase))));
 }
 
 /// <summary>

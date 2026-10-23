@@ -88,3 +88,27 @@ export async function postMessage(caseId: string, formData: FormData) {
     }
   });
 }
+
+async function staffChatCall<T>(caseId: string, fn: (staffId: string) => Promise<T>): Promise<{ data?: T; error?: string }> {
+  const staffId = await getStaffId();
+  if (!staffId) return { error: "Choose who you're signed in as first (bottom of the sidebar)." };
+  try {
+    const data = await fn(staffId);
+    revalidatePath(`/workspace/cases/${caseId}`);
+    return { data };
+  } catch (e) {
+    return { error: e instanceof ApiError ? e.message : "Chat is unavailable right now. Please try again." };
+  }
+}
+
+export async function joinChat(caseId: string) {
+  return staffChatCall(caseId, (staffId) => workspaceApi.joinChat(caseId, staffId));
+}
+
+export async function sendStaffChat(caseId: string, text: string) {
+  return staffChatCall(caseId, (staffId) => workspaceApi.sendStaffChat(caseId, staffId, text));
+}
+
+export async function endStaffChat(caseId: string) {
+  return staffChatCall(caseId, (staffId) => workspaceApi.endStaffChat(caseId, staffId));
+}

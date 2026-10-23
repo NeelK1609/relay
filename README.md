@@ -12,6 +12,8 @@ An AI-assisted customer service hub, built as an enterprise reference app on Azu
   - *Assistant* answers customers directly when the help centre fully covers the question, using semantic search over articles (`text-embedding-3-small`). Replies are labelled as AI.
   - *Drafter* writes grounded reply drafts for staff, with `[placeholders]` instead of invented details.
   - *Summarizer* keeps a one-line case summary and sentiment for the workspace.
+- **Live chat** (Azure Communication Services Chat): customers chat from the portal; the AI assistant answers from the help centre and hands off by opening a case with the transcript. Staff join the same conversation from the workspace, and messages stream to both sides in real time.
+- **Email notifications** (Azure Communication Services Email, Azure-managed domain): customers are emailed when a case is opened and when it gets a reply. Only allowlisted addresses receive mail, because demo customers use example.com.
 - **MCP server** (`Relay.Mcp`, Model Context Protocol over streamable HTTP): CRM tools any MCP client can use — VS Code / GitHub Copilot, Claude, or Foundry agents. Relay's own **Ask Relay** assistant in the workspace reaches the CRM only through this server.
 - **Orchestration** (Aspire 13): runs SQL Server, the API and the web app together locally, and deploys them to Azure Container Apps.
 
@@ -41,6 +43,18 @@ Requires the .NET 10 SDK, Node 20+, and Docker Desktop running.
 cd web && npm install && cd ..
 dotnet run --project src/Relay.AppHost
 ```
+
+### Enable live chat and email (optional)
+
+```bash
+az deployment group create -g rg-relay-dev -f infra/communication.bicep \
+  -p principalId=$(az ad signed-in-user show --query id -o tsv) principalType=User
+dotnet user-secrets set Parameters:communication-endpoint <endpoint output> --project src/Relay.AppHost
+dotnet user-secrets set Parameters:email-sender <senderAddress output> --project src/Relay.AppHost
+dotnet user-secrets set Parameters:email-allowlist you@example.com --project src/Relay.AppHost
+```
+
+Live chat also needs the AI agents enabled. Communication Services is called with Entra ID (no access keys).
 
 ### Enable the AI agents (optional)
 
@@ -77,12 +91,15 @@ azd up
 | Azure Container Apps (`web`, `api`, `mcp`) | Scale to zero when idle. Only `web` has a public endpoint. |
 | Azure SQL Database | Free offer (auto-pauses if the monthly allowance runs out). Entra-only auth; apps connect with managed identities. |
 | Microsoft Foundry | `gpt-5-mini` and `text-embedding-3-small`. Key auth disabled; apps use managed identities. |
+| Azure Communication Services | Live chat and email from an Azure-managed domain. The API's identity issues chat tokens and sends mail. |
 | Entra ID app registration | Protects the MCP server (Bicep + Microsoft Graph extension). Only the API's identity holds the `Crm.Tools` role. |
 | Container Registry, Log Analytics | Images and logs. |
 
 No secrets or connection strings with passwords exist anywhere: every service-to-service call uses a managed identity.
 
-**Public demo safeguards:** AI calls are capped at 20 per minute and 300 per day (HTTP 429 beyond that), and demo data reloads nightly at 08:00 UTC.
+**Public demo safeguards:** AI calls (including chat turns) are capped at 20 per minute and 300 per day (HTTP 429 beyond that), demo data reloads nightly at 08:00 UTC, and production sends no real email until you replace the `emailAllowlist` parameter's placeholder (`none`) in the app host.
+
+SMS and voice need phone numbers, which Azure doesn't sell to free-trial subscriptions; they're planned once the subscription is upgraded.
 
 ## MCP server
 
@@ -117,5 +134,6 @@ dotnet test
 3. ~~MCP server exposing CRM tools; Ask Relay assistant built on it~~
 4. ~~Azure deployment with `azd`: Container Apps, Azure SQL free offer, Foundry, managed identities, Entra-protected MCP~~
 5. Entra External ID for customers and Entra ID for staff; API Management AI gateway
-6. Channels: email, chat and SMS via Azure Communication Services; voice agent via Voice Live
-7. Dataverse implementation of `ICrmStore`
+6. ~~Live chat with AI hand-off and email notifications via Azure Communication Services~~
+7. SMS and a voice agent (Voice Live) — needs a pay-as-you-go subscription for phone numbers
+8. Dataverse implementation of `ICrmStore`

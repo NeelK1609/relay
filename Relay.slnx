@@ -3,6 +3,7 @@
     <Project Path="src/Relay.Agents/Relay.Agents.csproj" />
     <Project Path="src/Relay.Api/Relay.Api.csproj" />
     <Project Path="src/Relay.AppHost/Relay.AppHost.csproj" />
+    <Project Path="src/Relay.Channels/Relay.Channels.csproj" />
     <Project Path="src/Relay.Crm.Sql/Relay.Crm.Sql.csproj" />
     <Project Path="src/Relay.Domain/Relay.Domain.csproj" />
     <Project Path="src/Relay.Mcp/Relay.Mcp.csproj" />

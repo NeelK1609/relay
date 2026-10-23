@@ -1,5 +1,5 @@
 import type {
-  Article, CaseCategory, CaseDetail, CasePriority, CaseStats, CaseStatus, CaseSummary, Customer, DraftReply, Staff,
+  Article, CaseCategory, CaseDetail, ChatConnection, ChatState, CasePriority, CaseStats, CaseStatus, CaseSummary, Customer, DraftReply, Staff,
 } from "./types";
 
 export class ApiError extends Error {
@@ -33,6 +33,24 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/** POST that returns no body (204). */
+async function send(path: string, body?: string): Promise<void> {
+  const res = await fetch(baseUrl() + path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: body ?? "{}",
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    let message = res.statusText;
+    try {
+      const b = await res.json();
+      message = typeof b === "string" ? b : (b.detail ?? b.title ?? message);
+    } catch {}
+    throw new ApiError(res.status, message);
+  }
+}
+
 async function maybe<T>(promise: Promise<T>): Promise<T | null> {
   try {
     return await promise;
@@ -55,6 +73,17 @@ export const portalApi = {
     maybe(request<CaseDetail>(`/api/portal/customers/${customerId}/cases/${caseId}`)),
   openCase: (customerId: string, body: { title: string; description: string; category: CaseCategory }) =>
     request<CaseDetail>(`/api/portal/customers/${customerId}/cases`, { method: "POST", body: json(body) }),
+  startChat: (customerId: string) =>
+    request<ChatConnection>(`/api/portal/customers/${customerId}/chats`, { method: "POST" }),
+  connectChat: (customerId: string, chatId: string) =>
+    maybe(request<ChatConnection>(`/api/portal/customers/${customerId}/chats/${chatId}`)),
+  sendChat: (customerId: string, chatId: string, text: string) =>
+    request<ChatState>(`/api/portal/customers/${customerId}/chats/${chatId}/messages`, {
+      method: "POST",
+      body: json({ text }),
+    }),
+  endChat: (customerId: string, chatId: string) =>
+    send(`/api/portal/customers/${customerId}/chats/${chatId}/end`),
   reply: (customerId: string, caseId: string, body: string) =>
     request<CaseDetail>(`/api/portal/customers/${customerId}/cases/${caseId}/messages`, {
       method: "POST",
@@ -83,6 +112,12 @@ export const workspaceApi = {
   ) => request<CaseDetail>(`/api/workspace/cases/${caseId}`, { method: "PATCH", body: json(body) }),
   postMessage: (caseId: string, body: { staffId: string; body: string; isInternal: boolean }) =>
     request<CaseDetail>(`/api/workspace/cases/${caseId}/messages`, { method: "POST", body: json(body) }),
+  caseChat: (caseId: string) => maybe(request<ChatState>(`/api/workspace/cases/${caseId}/chat`)),
+  joinChat: (caseId: string, staffId: string) =>
+    request<ChatConnection>(`/api/workspace/cases/${caseId}/chat/join`, { method: "POST", body: json({ staffId }) }),
+  sendStaffChat: (caseId: string, staffId: string, text: string) =>
+    send(`/api/workspace/cases/${caseId}/chat/messages`, json({ staffId, text })),
+  endStaffChat: (caseId: string, staffId: string) => send(`/api/workspace/cases/${caseId}/chat/end`, json({ staffId })),
   aiEnabled: async (caseId: string) =>
     (await request<{ enabled: boolean }>(`/api/workspace/cases/${caseId}/ai/status`)).enabled,
   draftReply: (caseId: string, staffId: string) =>

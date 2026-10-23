@@ -20,6 +20,7 @@
     <ProjectReference Include="..\Relay.Crm.Sql\Relay.Crm.Sql.csproj" />
     <ProjectReference Include="..\Relay.ServiceDefaults\Relay.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Relay.Agents\Relay.Agents.csproj" />
+    <ProjectReference Include="..\Relay.Channels\Relay.Channels.csproj" />
   </ItemGroup>
 
 </Project>

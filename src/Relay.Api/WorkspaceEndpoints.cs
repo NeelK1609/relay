@@ -52,7 +52,7 @@ public static class WorkspaceEndpoints
             return Results.Ok(CaseDetailDto.From(c, now, includeInternal: true));
         });
 
-        ws.MapPost("/cases/{caseId:guid}/messages", async (Guid caseId, StaffMessageRequest req, ICrmStore crm, TimeProvider clock, CancellationToken ct) =>
+        ws.MapPost("/cases/{caseId:guid}/messages", async (Guid caseId, StaffMessageRequest req, ICrmStore crm, ICaseNotifier notifier, TimeProvider clock, CancellationToken ct) =>
         {
             if (await crm.GetCaseAsync(caseId, ct) is not { } c) return Results.NotFound();
             if (await crm.GetStaffAsync(req.StaffId, ct) is not { } staff) return Results.BadRequest("Unknown staff member.");
@@ -60,6 +60,7 @@ public static class WorkspaceEndpoints
             var now = clock.GetUtcNow();
             c.AddMessage(AuthorType.Staff, staff.Name, req.Body, req.IsInternal, now);
             await crm.SaveCaseAsync(c, ct);
+            if (!req.IsInternal) await notifier.NotifyAsync(new CaseNotification(c.Id, NotificationKind.NewReply), ct);
             return Results.Ok(CaseDetailDto.From(c, now, includeInternal: true));
         });
     }
