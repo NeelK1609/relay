@@ -42,7 +42,25 @@ export type CaseSummary = {
   resolutionDueAt: string;
   firstResponseBreached: boolean;
   resolutionBreached: boolean;
+  sentiment: Sentiment | null;
+  safetyRisk: boolean;
 };
+
+export type Sentiment = "Positive" | "Neutral" | "Negative" | "Distressed";
+
+export type CaseInsights = {
+  summary: string;
+  sentiment: Sentiment;
+  suggestedCategory: CaseCategory;
+  suggestedPriority: CasePriority;
+  confidence: number;
+  safetyRisk: boolean;
+  reason: string;
+  applied: boolean;
+  analyzedAt: string;
+};
+
+export type DraftReply = { reply: string; sources: string[] };
 
 export type Message = {
   id: string;
@@ -53,7 +71,7 @@ export type Message = {
   createdAt: string;
 };
 
-export type CaseDetail = { summary: CaseSummary; customer: Customer; messages: Message[] };
+export type CaseDetail = { summary: CaseSummary; customer: Customer; messages: Message[]; insights: CaseInsights | null };
 
 export type Article = { id: string; title: string; category: CaseCategory; body: string; updatedAt: string };
 

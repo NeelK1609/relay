@@ -6,7 +6,9 @@ import { workspaceApi } from "@/lib/api";
 import { dateTime, money, relativeTime } from "@/lib/format";
 import { getStaffId } from "@/lib/session";
 import { CASE_CATEGORIES, CASE_PRIORITIES, CASE_STATUSES, CATEGORY_LABELS, STATUS_LABELS } from "@/lib/types";
-import { postMessage, updateCase } from "../../actions";
+import { AiPanel } from "@/components/ai-panel";
+import { ReplyComposer } from "@/components/reply-composer";
+import { draftReply, postMessage, refreshSummary, updateCase } from "../../actions";
 
 const authorStyles = {
   Customer: "border-slate-200 bg-white",
@@ -18,7 +20,12 @@ const authorStyles = {
 export default async function CaseWorkspace({ params, searchParams }: PageProps<"/workspace/cases/[id]">) {
   const { id } = await params;
   const { error } = await searchParams;
-  const [detail, staff, staffId] = await Promise.all([workspaceApi.getCase(id), workspaceApi.staff(), getStaffId()]);
+  const [detail, staff, staffId, aiEnabled] = await Promise.all([
+    workspaceApi.getCase(id),
+    workspaceApi.staff(),
+    getStaffId(),
+    workspaceApi.aiEnabled(id),
+  ]);
   if (!detail) notFound();
   const { summary: c, customer, messages } = detail;
   const otherCases = (await workspaceApi.cases({ search: customer.accountNumber })).filter((x) => x.id !== c.id);
@@ -69,39 +76,7 @@ export default async function CaseWorkspace({ params, searchParams }: PageProps<
 
           {c.status !== "Closed" &&
             (staffId ? (
-              <form action={postMessage.bind(null, c.id)} className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
-                <label htmlFor="body" className="sr-only">
-                  Message
-                </label>
-                <textarea
-                  id="body"
-                  name="body"
-                  required
-                  rows={5}
-                  maxLength={4000}
-                  placeholder="Write a reply to the customer, or an internal note for the team"
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                />
-                <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-                  <fieldset className="flex gap-3">
-                    <legend className="sr-only">Visibility</legend>
-                    <label className="flex items-center gap-1.5">
-                      <input type="radio" name="visibility" value="public" defaultChecked /> Reply to customer
-                    </label>
-                    <label className="flex items-center gap-1.5">
-                      <input type="radio" name="visibility" value="internal" /> Internal note
-                    </label>
-                  </fieldset>
-                  <select name="thenStatus" aria-label="Then set status" className="rounded-md border border-slate-300 px-2 py-1">
-                    <option value="">Keep status</option>
-                    <option value="WaitingOnCustomer">Then: waiting on customer</option>
-                    <option value="Resolved">Then: resolved</option>
-                  </select>
-                  <button className="ml-auto rounded-md bg-indigo-600 px-4 py-1.5 font-medium text-white hover:bg-indigo-700">
-                    Send
-                  </button>
-                </div>
-              </form>
+              <ReplyComposer action={postMessage.bind(null, c.id)} draft={draftReply.bind(null, c.id)} aiEnabled={aiEnabled} />
             ) : (
               <p className="mt-6 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
                 Choose who you&apos;re signed in as (bottom of the sidebar) to reply.
@@ -110,6 +85,7 @@ export default async function CaseWorkspace({ params, searchParams }: PageProps<
         </section>
 
         <aside className="space-y-4">
+          {aiEnabled && <AiPanel insights={detail.insights} refresh={refreshSummary.bind(null, c.id)} />}
           <form
             key={c.updatedAt}
             action={updateCase.bind(null, c.id, {

@@ -56,6 +56,7 @@ public sealed class SupportCase
     public DateTimeOffset ResolutionDueAt { get; private set; }
     public DateTimeOffset? FirstRespondedAt { get; private set; }
     public DateTimeOffset? ResolvedAt { get; private set; }
+    public CaseInsights? Insights { get; private set; }
     public IReadOnlyList<CaseMessage> Messages => _messages;
 
     public string Reference => $"CAS-{Number:D6}";
@@ -119,6 +120,40 @@ public sealed class SupportCase
         UpdatedAt = now;
     }
 
+    /// <summary>
+    /// Records AI triage. Suggestions are applied only while no person has worked the case
+    /// and the agent is confident; a safety risk always raises priority to Urgent.
+    /// </summary>
+    public void ApplyTriage(
+        string summary, Sentiment sentiment, CaseCategory category, CasePriority priority,
+        double confidence, bool safetyRisk, string reason, double autoApplyThreshold, DateTimeOffset now)
+    {
+        if (safetyRisk) priority = CasePriority.Urgent;
+        var untouched = Status == CaseStatus.New && AssignedStaffId is null;
+        var apply = untouched && (confidence >= autoApplyThreshold || safetyRisk);
+
+        if (apply)
+        {
+            Category = category;
+            ApplyPriority(priority);
+        }
+
+        Insights = new CaseInsights(summary, sentiment, category, priority, confidence, safetyRisk, reason, apply, now);
+
+        var verdict = apply ? "Applied" : untouched ? "Suggested (low confidence)" : "Suggested (case already in progress)";
+        _messages.Add(new CaseMessage(Id, AuthorType.AiAgent, "Relay Triage",
+            $"{verdict}: {category}, {priority} priority, {sentiment.ToString().ToLowerInvariant()} sentiment " +
+            $"({confidence:P0} confidence).{(safetyRisk ? " Safety risk detected." : "")}\n{reason}",
+            isInternal: true, now));
+    }
+
+    public void UpdateSummary(string summary, Sentiment sentiment, DateTimeOffset now)
+    {
+        Insights = Insights is null
+            ? new CaseInsights(summary, sentiment, Category, Priority, 0, false, "", false, now)
+            : Insights with { Summary = summary, Sentiment = sentiment, AnalyzedAt = now };
+    }
+
     private void TransitionTo(CaseStatus next, DateTimeOffset now)
     {
         Status = next;
@@ -160,3 +195,7 @@ public sealed class CaseMessage
 }
 
 public sealed class DomainException(string message) : Exception(message);
+
+/// <summary>The case was changed by someone else since it was loaded.</summary>
+public sealed class ConcurrencyConflictException(Exception inner)
+    : Exception("This case was changed by someone else. Reload and try again.", inner);

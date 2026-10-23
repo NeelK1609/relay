@@ -47,15 +47,21 @@ export default async function RequestDetail({ params, searchParams }: PageProps<
       <ol className="mt-8 space-y-4">
         {messages.map((m) => {
           const mine = m.authorType === "Customer";
+          const ai = m.authorType === "AiAgent";
           return (
             <li key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                  mine ? "bg-emerald-600 text-white" : "border border-slate-200 bg-white text-slate-800"
+                  mine
+                    ? "bg-emerald-600 text-white"
+                    : ai
+                      ? "border border-violet-200 bg-violet-50 text-slate-800"
+                      : "border border-slate-200 bg-white text-slate-800"
                 }`}
               >
                 <p className={`text-xs ${mine ? "text-emerald-100" : "text-slate-500"}`}>
-                  {mine ? "You" : `${m.authorName} · Highland Energy`} · {dateTime(m.createdAt)}
+                  {mine ? "You" : ai ? "Relay Assistant (AI) · Highland Energy" : `${m.authorName} · Highland Energy`} ·{" "}
+                  {dateTime(m.createdAt)}
                 </p>
                 <p className="mt-1 whitespace-pre-wrap leading-6">{m.body}</p>
               </div>

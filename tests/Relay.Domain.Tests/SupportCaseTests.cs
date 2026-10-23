@@ -142,3 +142,68 @@ public class SupportCaseTests
         Assert.False(c.IsResolutionBreached(T0.AddDays(5)));
     }
 }
+
+public class TriageTests
+{
+    private static readonly DateTimeOffset T0 = new(2026, 10, 1, 9, 0, 0, TimeSpan.Zero);
+
+    private static SupportCase NewCase() => SupportCase.Open(
+        new Customer("Raj", "Patel", "raj@example.com", "204-555-0163",
+            new ServiceAccount("HE-2", "402 Rosser Ave", "Brandon", "Small Business")),
+        "Lights flickering", "Lights flicker and there's a burning smell near the panel.",
+        CaseCategory.General, CasePriority.Normal, Channel.Portal, T0);
+
+    [Fact]
+    public void Confident_triage_on_untouched_case_is_applied_and_logged_as_internal_note()
+    {
+        var c = NewCase();
+
+        c.ApplyTriage("Flicker with burning smell.", Sentiment.Negative, CaseCategory.Outage, CasePriority.High,
+            0.9, safetyRisk: false, "Flickering points to a supply fault.", 0.75, T0.AddSeconds(5));
+
+        Assert.Equal(CaseCategory.Outage, c.Category);
+        Assert.Equal(CasePriority.High, c.Priority);
+        Assert.True(c.Insights!.Applied);
+        var note = c.Messages[^1];
+        Assert.True(note.IsInternal);
+        Assert.Equal(AuthorType.AiAgent, note.AuthorType);
+        Assert.Null(c.FirstRespondedAt);
+    }
+
+    [Fact]
+    public void Low_confidence_triage_is_suggested_but_not_applied()
+    {
+        var c = NewCase();
+
+        c.ApplyTriage("Unclear.", Sentiment.Neutral, CaseCategory.Billing, CasePriority.Low, 0.4, false, "Vague.", 0.75, T0);
+
+        Assert.Equal(CaseCategory.General, c.Category);
+        Assert.Equal(CasePriority.Normal, c.Priority);
+        Assert.False(c.Insights!.Applied);
+        Assert.Equal(CaseCategory.Billing, c.Insights.SuggestedCategory);
+    }
+
+    [Fact]
+    public void Safety_risk_forces_urgent_even_with_low_confidence()
+    {
+        var c = NewCase();
+
+        c.ApplyTriage("Burning smell.", Sentiment.Distressed, CaseCategory.Outage, CasePriority.High, 0.5, safetyRisk: true, "Fire risk.", 0.75, T0);
+
+        Assert.Equal(CasePriority.Urgent, c.Priority);
+        Assert.Equal(T0.AddHours(1), c.FirstResponseDueAt);
+        Assert.True(c.Insights!.Applied);
+    }
+
+    [Fact]
+    public void Triage_never_overrides_a_case_a_person_is_already_working()
+    {
+        var c = NewCase();
+        c.AssignTo(new Staff("Marcus Lee", "marcus@example.com", "Field Operations"), T0.AddMinutes(1));
+
+        c.ApplyTriage("x", Sentiment.Neutral, CaseCategory.Billing, CasePriority.Low, 0.99, false, "x", 0.75, T0.AddMinutes(2));
+
+        Assert.Equal(CaseCategory.General, c.Category);
+        Assert.False(c.Insights!.Applied);
+    }
+}

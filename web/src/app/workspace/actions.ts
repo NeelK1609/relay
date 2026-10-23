@@ -47,6 +47,20 @@ export async function updateCase(caseId: string, current: CaseFields, formData: 
   );
 }
 
+export async function draftReply(caseId: string): Promise<{ reply?: string; sources?: string[]; error?: string }> {
+  const staffId = await getStaffId();
+  if (!staffId) return { error: "Choose who you're signed in as first." };
+  try {
+    return await workspaceApi.draftReply(caseId, staffId);
+  } catch (e) {
+    return { error: e instanceof ApiError ? e.message : "The assistant couldn't draft a reply. Try again." };
+  }
+}
+
+export async function refreshSummary(caseId: string) {
+  await run(caseId, () => workspaceApi.summarize(caseId));
+}
+
 export async function postMessage(caseId: string, formData: FormData) {
   const staffId = await getStaffId();
   if (!staffId) redirect("/workspace");

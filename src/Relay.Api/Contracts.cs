@@ -21,14 +21,15 @@ public sealed record CaseSummaryDto(
     Channel Channel, Guid CustomerId, string CustomerName, string AccountNumber,
     Guid? AssignedStaffId, string? AssignedStaffName, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt,
     DateTimeOffset FirstResponseDueAt, DateTimeOffset ResolutionDueAt,
-    bool FirstResponseBreached, bool ResolutionBreached)
+    bool FirstResponseBreached, bool ResolutionBreached, Sentiment? Sentiment, bool SafetyRisk)
 {
     public static CaseSummaryDto From(SupportCase c, DateTimeOffset now) => new(
         c.Id, c.Reference, c.Title, c.Category, c.Priority, c.Status, c.Channel,
         c.CustomerId, c.Customer.FullName, c.Customer.Account.AccountNumber,
         c.AssignedStaffId, c.AssignedTo?.Name, c.CreatedAt, c.UpdatedAt,
         c.FirstResponseDueAt, c.ResolutionDueAt,
-        c.IsOpen && c.IsFirstResponseBreached(now), c.IsOpen && c.IsResolutionBreached(now));
+        c.IsOpen && c.IsFirstResponseBreached(now), c.IsOpen && c.IsResolutionBreached(now),
+        c.Insights?.Sentiment, c.Insights?.SafetyRisk ?? false);
 }
 
 public sealed record MessageDto(Guid Id, AuthorType AuthorType, string AuthorName, string Body, bool IsInternal, DateTimeOffset CreatedAt)
@@ -36,13 +37,16 @@ public sealed record MessageDto(Guid Id, AuthorType AuthorType, string AuthorNam
     public static MessageDto From(CaseMessage m) => new(m.Id, m.AuthorType, m.AuthorName, m.Body, m.IsInternal, m.CreatedAt);
 }
 
-public sealed record CaseDetailDto(CaseSummaryDto Summary, CustomerDto Customer, IReadOnlyList<MessageDto> Messages)
+public sealed record CaseDetailDto(CaseSummaryDto Summary, CustomerDto Customer, IReadOnlyList<MessageDto> Messages, CaseInsights? Insights)
 {
     public static CaseDetailDto From(SupportCase c, DateTimeOffset now, bool includeInternal) => new(
         CaseSummaryDto.From(c, now),
         CustomerDto.From(c.Customer),
-        c.Messages.Where(m => includeInternal || !m.IsInternal).OrderBy(m => m.CreatedAt).Select(MessageDto.From).ToList());
+        c.Messages.Where(m => includeInternal || !m.IsInternal).OrderBy(m => m.CreatedAt).Select(MessageDto.From).ToList(),
+        includeInternal ? c.Insights : null);
 }
+
+public sealed record DraftRequest(Guid StaffId);
 
 public sealed record ArticleDto(Guid Id, string Title, CaseCategory Category, string Body, DateTimeOffset UpdatedAt)
 {

@@ -49,6 +49,12 @@ public sealed class RelayDbContext(DbContextOptions<RelayDbContext> options) : D
             e.HasIndex(x => new { x.Status, x.Priority });
             e.HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId);
             e.HasOne(x => x.AssignedTo).WithMany().HasForeignKey(x => x.AssignedStaffId).OnDelete(DeleteBehavior.SetNull);
+            e.Property<byte[]>("Version").IsRowVersion();
+            e.ComplexProperty(x => x.Insights, i =>
+            {
+                i.Property(x => x.Summary).HasMaxLength(1000);
+                i.Property(x => x.Reason).HasMaxLength(1000);
+            });
             e.HasMany(x => x.Messages).WithOne().HasForeignKey(m => m.CaseId);
             e.Navigation(x => x.Messages).UsePropertyAccessMode(PropertyAccessMode.Field);
         });

@@ -63,7 +63,17 @@ public sealed class SqlCrmStore(RelayDbContext db) : ICrmStore
         await db.SaveChangesAsync(ct);
     }
 
-    public Task SaveCaseAsync(SupportCase supportCase, CancellationToken ct) => db.SaveChangesAsync(ct);
+    public async Task SaveCaseAsync(SupportCase supportCase, CancellationToken ct)
+    {
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConcurrencyConflictException(ex);
+        }
+    }
 
     public async Task<CaseStats> GetStatsAsync(DateTimeOffset now, CancellationToken ct)
     {

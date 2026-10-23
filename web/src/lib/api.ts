@@ -1,5 +1,5 @@
 import type {
-  Article, CaseCategory, CaseDetail, CasePriority, CaseStats, CaseStatus, CaseSummary, Customer, Staff,
+  Article, CaseCategory, CaseDetail, CasePriority, CaseStats, CaseStatus, CaseSummary, Customer, DraftReply, Staff,
 } from "./types";
 
 export class ApiError extends Error {
@@ -83,6 +83,12 @@ export const workspaceApi = {
   ) => request<CaseDetail>(`/api/workspace/cases/${caseId}`, { method: "PATCH", body: json(body) }),
   postMessage: (caseId: string, body: { staffId: string; body: string; isInternal: boolean }) =>
     request<CaseDetail>(`/api/workspace/cases/${caseId}/messages`, { method: "POST", body: json(body) }),
+  aiEnabled: async (caseId: string) =>
+    (await request<{ enabled: boolean }>(`/api/workspace/cases/${caseId}/ai/status`)).enabled,
+  draftReply: (caseId: string, staffId: string) =>
+    request<DraftReply>(`/api/workspace/cases/${caseId}/ai/draft`, { method: "POST", body: json({ staffId }) }),
+  summarize: (caseId: string) =>
+    request<CaseDetail>(`/api/workspace/cases/${caseId}/ai/summarize`, { method: "POST" }),
 };
 
 export const knowledgeApi = {

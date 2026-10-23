@@ -19,6 +19,7 @@
     <ProjectReference Include="..\Relay.Domain\Relay.Domain.csproj" />
     <ProjectReference Include="..\Relay.Crm.Sql\Relay.Crm.Sql.csproj" />
     <ProjectReference Include="..\Relay.ServiceDefaults\Relay.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\Relay.Agents\Relay.Agents.csproj" />
   </ItemGroup>
 
 </Project>

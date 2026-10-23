@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SentimentBadge } from "@/components/ai-panel";
 import { CategoryBadge, PriorityBadge, StatusBadge } from "@/components/badges";
 import { SlaIndicator } from "@/components/sla";
 import { workspaceApi, type CaseFilters } from "@/lib/api";
@@ -99,6 +100,14 @@ export default async function Queue({ searchParams }: PageProps<"/workspace">) {
                   <Link href={`/workspace/cases/${c.id}`} className="font-medium text-slate-900 hover:text-indigo-700">
                     {c.title}
                   </Link>
+                  {c.safetyRisk && (
+                    <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">⚠ Safety</span>
+                  )}
+                  {(c.sentiment === "Negative" || c.sentiment === "Distressed") && (
+                    <span className="ml-2">
+                      <SentimentBadge sentiment={c.sentiment} />
+                    </span>
+                  )}
                   <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
                     {c.reference} <CategoryBadge category={c.category} /> {c.channel}
                   </div>
