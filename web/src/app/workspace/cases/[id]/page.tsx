@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { notFound } from "next/navigation";
 import { PriorityBadge, StatusBadge } from "@/components/badges";
 import { SlaIndicator } from "@/components/sla";
@@ -35,6 +36,7 @@ export default async function CaseWorkspace({ params, searchParams }: PageProps<
 
   return (
     <div className="px-4 py-6 lg:px-8">
+      <AutoRefresh />
       <Link href="/workspace" className="text-sm text-slate-500 hover:text-slate-800">
         ← Queue
       </Link>

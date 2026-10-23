@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { notFound, redirect } from "next/navigation";
 import { StatusBadge } from "@/components/badges";
 import { portalApi } from "@/lib/api";
@@ -19,6 +20,7 @@ export default async function RequestDetail({ params, searchParams }: PageProps<
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
+      <AutoRefresh />
       <Link href="/requests" className="text-sm text-slate-500 hover:text-slate-800">
         ← My requests
       </Link>

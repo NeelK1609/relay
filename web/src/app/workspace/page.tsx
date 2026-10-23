@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { SentimentBadge } from "@/components/ai-panel";
 import { AskRelay } from "@/components/ask-relay";
 import { askRelay } from "./actions";
@@ -34,6 +35,7 @@ export default async function Queue({ searchParams }: PageProps<"/workspace">) {
 
   return (
     <div className="px-4 py-6 lg:px-8">
+      <AutoRefresh seconds={20} />
       <h1 className="text-xl font-semibold text-slate-900">Case queue</h1>
 
       <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
