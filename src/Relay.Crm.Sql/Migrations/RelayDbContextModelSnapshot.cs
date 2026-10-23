@@ -26,6 +26,22 @@ namespace Relay.Crm.Sql.Migrations
             modelBuilder.HasSequence<int>("CaseNumbers")
                 .StartsAt(1001L);
 
+            modelBuilder.Entity("Relay.Crm.Sql.DemoState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("SeededAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DemoState");
+                });
+
             modelBuilder.Entity("Relay.Domain.CaseMessage", b =>
                 {
                     b.Property<Guid>("Id")

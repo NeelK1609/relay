@@ -5,6 +5,9 @@ import "./globals.css";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+// Every page shows live CRM data, so nothing is prerendered at build time.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: { default: "Highland Energy Support", template: "%s · Highland Energy" },
   description: "Get help with outages, billing, payments and moving service.",

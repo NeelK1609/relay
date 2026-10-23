@@ -1,5 +1,7 @@
 # Relay
 
+**Live demo:** https://web.delightfulsky-7c3b0a6f.canadaeast.azurecontainerapps.io (scales to zero, so the first load can take a few seconds)
+
 An AI-assisted customer service hub, built as an enterprise reference app on Azure. The demo customer is **Highland Energy**, a fictional utility whose customers report outages, ask billing questions and move service.
 
 - **Customer portal** (Next.js): help centre, start a request, follow the conversation with support.
@@ -60,6 +62,28 @@ Open the Aspire dashboard link printed in the terminal, then the `web` endpoint.
 
 Sign-in is a demo cookie for now; Entra External ID (customers) and Entra ID (staff) replace it in the Azure phase.
 
+## Deploy to Azure
+
+```bash
+azd auth login
+azd env new relay-prod --location canadaeast
+azd up
+```
+
+`azd` reads the Aspire app host and provisions:
+
+| Resource | Notes |
+|---|---|
+| Azure Container Apps (`web`, `api`, `mcp`) | Scale to zero when idle. Only `web` has a public endpoint. |
+| Azure SQL Database | Free offer (auto-pauses if the monthly allowance runs out). Entra-only auth; apps connect with managed identities. |
+| Microsoft Foundry | `gpt-5-mini` and `text-embedding-3-small`. Key auth disabled; apps use managed identities. |
+| Entra ID app registration | Protects the MCP server (Bicep + Microsoft Graph extension). Only the API's identity holds the `Crm.Tools` role. |
+| Container Registry, Log Analytics | Images and logs. |
+
+No secrets or connection strings with passwords exist anywhere: every service-to-service call uses a managed identity.
+
+**Public demo safeguards:** AI calls are capped at 20 per minute and 300 per day (HTTP 429 beyond that), and demo data reloads nightly at 08:00 UTC.
+
 ## MCP server
 
 `Relay.Mcp` exposes the CRM as tools at `http://localhost:5134/mcp`:
@@ -78,7 +102,7 @@ There is deliberately no tool that messages customers: anything a customer sees 
 
 **Use it from VS Code:** with the app running, open this folder in VS Code; `.vscode/mcp.json` registers the `relay-crm` server for Copilot agent mode.
 
-The server currently runs only in Development; Entra ID (OAuth) protection is added with the Azure deployment.
+In Azure the MCP server is internal to the Container Apps environment and requires an Entra token with the `Crm.Tools` app role. Without auth configured it refuses to start outside Development.
 
 ## Tests
 
@@ -91,6 +115,7 @@ dotnet test
 1. ~~Local foundation: CRM domain, API, portal and workspace~~
 2. ~~AI agents on Microsoft Foundry: triage, knowledge-grounded answers, reply drafts, summaries~~
 3. ~~MCP server exposing CRM tools; Ask Relay assistant built on it~~
-4. Azure deployment with `azd`: Container Apps, Azure SQL, Entra External ID, API Management AI gateway, budget alerts
-5. Channels: email, chat and SMS via Azure Communication Services; voice agent via Voice Live
-6. Dataverse implementation of `ICrmStore`
+4. ~~Azure deployment with `azd`: Container Apps, Azure SQL free offer, Foundry, managed identities, Entra-protected MCP~~
+5. Entra External ID for customers and Entra ID for staff; API Management AI gateway
+6. Channels: email, chat and SMS via Azure Communication Services; voice agent via Voice Live
+7. Dataverse implementation of `ICrmStore`

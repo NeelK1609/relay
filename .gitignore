@@ -486,3 +486,6 @@ $RECYCLE.BIN/
 .claude-flow/
 .claude/
 .aspire/
+
+# azd environments (contain subscription details)
+.azure/

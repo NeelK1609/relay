@@ -14,6 +14,7 @@ builder.AddSqlServerDbContext<RelayDbContext>("relaydb");
 builder.Services.AddScoped<ICrmStore, SqlCrmStore>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddRelayAgents(builder.Configuration);
+builder.Services.AddDemoSafeguards(builder.Configuration);
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<CaseRuleExceptionHandler>();
@@ -22,6 +23,7 @@ builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Ad
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {

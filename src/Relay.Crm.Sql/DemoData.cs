@@ -151,6 +151,28 @@ public static class DemoData
         db.Customers.AddRange(customers);
         db.Cases.AddRange(cases);
         db.KnowledgeArticles.AddRange(articles);
+        db.DemoState.Add(new DemoState { SeededAt = now });
         await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>Wipes all CRM data and reloads the demo set, in one transaction.</summary>
+    public static async Task ResetAsync(RelayDbContext db, DateTimeOffset now, CancellationToken ct = default)
+    {
+        var strategy = db.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var tx = await db.Database.BeginTransactionAsync(ct);
+            await db.CaseMessages.ExecuteDeleteAsync(ct);
+            await db.Cases.ExecuteDeleteAsync(ct);
+            await db.Customers.ExecuteDeleteAsync(ct);
+            await db.Accounts.ExecuteDeleteAsync(ct);
+            await db.Staff.ExecuteDeleteAsync(ct);
+            await db.KnowledgeArticles.ExecuteDeleteAsync(ct);
+            await db.DemoState.ExecuteDeleteAsync(ct);
+            await db.Database.ExecuteSqlRawAsync("ALTER SEQUENCE CaseNumbers RESTART WITH 1001", ct);
+            db.ChangeTracker.Clear();
+            await SeedAsync(db, now, ct);
+            await tx.CommitAsync(ct);
+        });
     }
 }

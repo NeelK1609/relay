@@ -1,3 +1,4 @@
+using Azure.Core;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -11,8 +12,11 @@ public sealed class McpOptions
 {
     public const string Section = "Mcp";
 
-    /// <summary>Relay MCP server URL, e.g. http://localhost:5240/mcp.</summary>
+    /// <summary>Relay MCP server URL, e.g. http://localhost:5134/mcp.</summary>
     public string? Endpoint { get; set; }
+
+    /// <summary>Entra scope for the MCP server (api://…/.default). When set, calls carry a managed-identity token.</summary>
+    public string? Scope { get; set; }
 }
 
 public sealed record CopilotAnswer(string Answer, IReadOnlyList<string> ToolsUsed);
@@ -22,7 +26,7 @@ public sealed record CopilotAnswer(string Answer, IReadOnlyList<string> ToolsUse
 /// Relay MCP server, so it sees exactly the tools any other MCP client would.
 /// </summary>
 public sealed class OpsCopilot(
-    IChatClient chatClient, IOptions<McpOptions> mcp, TimeProvider clock, ILoggerFactory loggerFactory)
+    IChatClient chatClient, IOptions<McpOptions> mcp, TokenCredential credential, TimeProvider clock, ILoggerFactory loggerFactory)
 {
     private const string Instructions = """
         You are Relay, an operations assistant for Highland Energy's customer support staff.
@@ -40,12 +44,19 @@ public sealed class OpsCopilot(
             throw new InvalidOperationException("Mcp:Endpoint is not configured.");
         }
 
+        var headers = new Dictionary<string, string> { ["X-Relay-Staff"] = staff.Name };
+        if (!string.IsNullOrWhiteSpace(mcp.Value.Scope))
+        {
+            var token = await credential.GetTokenAsync(new TokenRequestContext([mcp.Value.Scope]), ct);
+            headers["Authorization"] = $"Bearer {token.Token}";
+        }
+
         await using var client = await McpClient.CreateAsync(
             new HttpClientTransport(new HttpClientTransportOptions
             {
                 Endpoint = new Uri(mcp.Value.Endpoint),
                 Name = "Relay Ask",
-                AdditionalHeaders = new Dictionary<string, string> { ["X-Relay-Staff"] = staff.Name },
+                AdditionalHeaders = headers,
             }, loggerFactory),
             loggerFactory: loggerFactory,
             cancellationToken: ct);

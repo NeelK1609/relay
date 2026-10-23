@@ -12,6 +12,7 @@ public sealed class RelayDbContext(DbContextOptions<RelayDbContext> options) : D
     public DbSet<SupportCase> Cases => Set<SupportCase>();
     public DbSet<CaseMessage> CaseMessages => Set<CaseMessage>();
     public DbSet<KnowledgeArticle> KnowledgeArticles => Set<KnowledgeArticle>();
+    public DbSet<DemoState> DemoState => Set<DemoState>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -72,6 +73,13 @@ public sealed class RelayDbContext(DbContextOptions<RelayDbContext> options) : D
             e.Property(x => x.Body).HasMaxLength(8000);
         });
     }
+}
+
+/// <summary>When the demo data was last loaded, for the nightly reset.</summary>
+public sealed class DemoState
+{
+    public int Id { get; set; }
+    public DateTimeOffset SeededAt { get; set; }
 }
 
 public sealed class RelayDbContextDesignFactory : IDesignTimeDbContextFactory<RelayDbContext>

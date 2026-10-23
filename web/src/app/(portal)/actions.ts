@@ -36,7 +36,7 @@ export async function openRequest(formData: FormData) {
   try {
     caseId = (await portalApi.openCase(customerId, { title, description, category })).summary.id;
   } catch (e) {
-    if (e instanceof ApiError && e.status === 400) {
+    if (e instanceof ApiError && (e.status === 400 || e.status === 429)) {
       redirect(`/requests/new?category=${category}&error=${encodeURIComponent(e.message)}`);
     }
     throw e;

@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.6.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.3.0" />
   </ItemGroup>
 

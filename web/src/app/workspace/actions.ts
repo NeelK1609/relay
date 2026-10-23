@@ -17,7 +17,7 @@ async function run(caseId: string, action: () => Promise<unknown>) {
   try {
     await action();
   } catch (e) {
-    if (e instanceof ApiError && e.status === 400) {
+    if (e instanceof ApiError && [400, 409, 429].includes(e.status)) {
       redirect(`/workspace/cases/${caseId}?error=${encodeURIComponent(e.message)}`);
     }
     throw e;
